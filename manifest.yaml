@@ -1,0 +1,18 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: discord-relay
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: discord-relay
+  template:
+    metadata:
+      labels:
+        app: discord-relay
+    spec:
+      containers:
+      - name: discord-relay
+        image: justindh/discord-relay
