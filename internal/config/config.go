@@ -11,11 +11,8 @@ type Config struct {
 	IsWebhook            bool       `yaml:"is_webhook"`
 	ForwarderToken       string     `yaml:"forwarder_token"`
 	ErrorLogChannelID    string     `yaml:"error_log_channel_id"`
-	DiscordRusWebhookURL string     `yaml:"discord_rus_webhook_url"`
 	Listeners            []Listener `yaml:"discord_listeners"`
 	ConfigPath           string     `yaml:"-"`
-	MetricsEnabled       bool       `yaml:"mectrics_enabled"`
-	MetricsEndpoint      string     `yaml:"metrics_endpoint"`
 }
 
 // NewConfig Loads the config from the provided path
