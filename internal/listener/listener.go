@@ -4,7 +4,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/sirupsen/logrus"
 
-	"github.com/justindh/discord-relay/internal/forwarder"
+	"github.com/ZmeisIncorporated/discord--relay/internal/forwarder"
 )
 
 //Listeners all of the incloming updates.

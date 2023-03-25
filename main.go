@@ -10,9 +10,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/justindh/discord-relay/internal/config"
-	"github.com/justindh/discord-relay/internal/forwarder"
-	"github.com/justindh/discord-relay/internal/listener"
+	"github.com/ZmeisIncorporated/discord--relay/internal/config"
+	"github.com/ZmeisIncorporated/discord--relay/internal/forwarder"
+	"github.com/ZmeisIncorporated/discord--relay/internal/listener"
 )
 
 func init() {
