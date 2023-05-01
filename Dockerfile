@@ -1,9 +1,8 @@
-FROM golang:latest
+FROM golang:1.19
 
-WORKDIR /go/src/app
+WORKDIR /discord--relay
 COPY . .
 
-RUN go get -d -v ./...
-RUN go install -v ./...
+RUN go build -a -v -o app main.go
 
-ENTRYPOINT [ "discord-relay"]
+ENTRYPOINT ["/discord--relay/app"]
