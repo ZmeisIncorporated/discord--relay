@@ -2,7 +2,37 @@
 
 Meant to listen messages in discord channels and forward them to another.
 
+# How to run locally
 
+All you need is docker.
+
+## Build service
+
+```shell
+make build
+```
+
+or if you doesn't have a make
+
+```shell
+docker build --tag discord--relay:latest .
+```
+
+## Run service
+
+```shell
+make run
+```
+
+or if you doesn't have a make
+
+```shell
+docker run -ti --rm -v `pwd`/config.yaml:/discord--relay/config.yaml discord--relay:latest
+```
+
+# Configuration
+
+Fix your config.yaml
 
 # General Flow
 A single listener can listen to X number of channels across multiple servers. Each listener
