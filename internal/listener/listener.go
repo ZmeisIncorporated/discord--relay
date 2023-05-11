@@ -37,13 +37,14 @@ func newListener(token string, forwarder *forwarder.Forwarder) (*discordgo.Sessi
 	sess.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsAllWithoutPrivileged)
 	// Add a message processor
 	sess.AddHandler(forwarder.MessageCreate)
+	sess.AddHandler(forwarder.MessageUpdate)
 	// Change the defaults so we look less like a bot
 	sess.Identify.Properties.Browser = "Chrome"
 	sess.Identify.Properties.Device = ""
 	sess.Identify.Properties.OS = "Windows"
 	sess.Identify.Properties.Referer = "https://www.google.com/"
 	sess.Identify.Properties.ReferringDomain = "www.google.com"
-	sess.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36"
+	sess.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36"
 	sess.Debug = false
 	// open the session and start listening for messages
 	err = sess.Open()
