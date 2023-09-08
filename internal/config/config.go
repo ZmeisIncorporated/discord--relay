@@ -13,6 +13,7 @@ type Config struct {
 	ErrorLogChannelID    string     `yaml:"error_log_channel_id"`
 	Listeners            []Listener `yaml:"discord_listeners"`
 	ConfigPath           string     `yaml:"-"`
+	Logs                 string     `yaml:"logs"`
 }
 
 // NewConfig Loads the config from the provided path

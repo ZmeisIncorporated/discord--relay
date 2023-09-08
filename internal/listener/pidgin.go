@@ -1,14 +1,16 @@
 package listener
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
-	"golang.org/x/net/html"
 	"strings"
-	"errors"
-	"bytes"
-	"io"
+	"time"
+
+	"golang.org/x/net/html"
 
 	"github.com/ZmeisIncorporated/discord--relay/internal/forwarder"
 )
@@ -41,7 +43,7 @@ func Body(doc *html.Node) (*html.Node, error) {
 	var crawler func(*html.Node)
 
 	crawler = func(node *html.Node) {
-		if node.Type == html.ElementNode && node.Data == "body" {
+		if node.Type == html.ElementNode && node.Data == "p" {
 			body = node
 			return
 		}
@@ -54,7 +56,7 @@ func Body(doc *html.Node) (*html.Node, error) {
 	if body != nil {
 		return body, nil
 	}
-	return nil, errors.New("Missing <body> in the node tree")
+	return nil, errors.New("Missing <p> in the node tree")
 }
 
 
@@ -62,7 +64,10 @@ func renderNode(n *html.Node) string {
 	var buf bytes.Buffer
 	w := io.Writer(&buf)
 	html.Render(w, n)
-	return buf.String()
+	message := buf.String()
+	message = strings.Replace(message, "<br/>", "\n", -1)
+	message = strings.Replace(message, "~~~", "", -1)
+	return message
 }
 
 func (l *PidginListener) MsgParser(text string) string {
@@ -88,14 +93,24 @@ func (l *PidginListener) Run() {
 		return
 	}
 
-	for _, file := range files {
-		f, err := os.ReadFile(fmt.Sprintf("%s/%s", l.logs, file.Name()))
-		if err != nil {
-			l.Send(fmt.Sprintf("Error while reading logfile %s: %s", file.Name(), err))
+	for {
+		select {
+		case <- time.After(5 * time.Second):
+			
+			for _, file := range files {
+				f, err := os.ReadFile(fmt.Sprintf("%s/%s", l.logs, file.Name()))
+				if err != nil {
+					l.Send(fmt.Sprintf("Error while reading logfile %s: %s", file.Name(), err))
+				}
+				fs := string(f)
+				body := l.MsgParser(fs)
+				l.Send(body)
+
+				// ToDo: remove obsolete log file after sending it to discord
+			}
+
 		}
-		fs := string(f)
-		body := l.MsgParser(fs)
-		l.Send(body)
 	}
+
 }
 

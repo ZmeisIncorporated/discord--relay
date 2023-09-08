@@ -67,8 +67,7 @@ func main() {
 	}
 
 	// Open up pidgin logs listener
-	logs := "/home/v.ponarevsky/.purple/logs/jabber/agent_azar@goonfleet.com/directorbot@goonfleet.com"
-	pidgin, err := listener.NewPidginListener(f, cfg.ErrorLogChannelID, logs)
+	pidgin, err := listener.NewPidginListener(f, cfg.ErrorLogChannelID, cfg.Logs)
 	if err != nil {
 		log.Errorf("Error while sending to log: %s", err)
 		return
