@@ -11,25 +11,21 @@ import (
 
 type PidginListener struct {
 	f *forwarder.Forwarder
-	ch string
 	logs string
-	delete bool
 }
 
 
-func NewPidginListener(forwarder *forwarder.Forwarder, ch string, logs string, delete bool) (PidginListener, error) {
+func NewPidginListener(forwarder *forwarder.Forwarder, logs string) (PidginListener, error) {
 	l := PidginListener{
 		f: forwarder,
-		ch: ch,
 		logs: logs,
-		delete: delete,
 	}
 	return l, nil
 }
 
 
 func (l *PidginListener) Send(username string, msg string) {
-	err := l.f.Send(username, msg, l.ch)
+	err := l.f.Send(username, msg)
 	if err != nil {
 		fmt.Printf("Error while sending pidgin log file: %s", err)
 	}
@@ -77,7 +73,7 @@ func filterByDate(now time.Time, evetime time.Time) bool {
 	diff := now.Sub(evetime)
 
 	// ToDo: looks dangerous
-	if diff > 30 * time.Second {
+	if diff > 1 * time.Hour {
 		return false
 	}
 	

@@ -52,22 +52,21 @@ func main() {
 	}
 
 	// Connect to the destination for all messages
-	f, err := forwarder.NewForwarder(cfg.ForwarderToken, cfg.IsWebhook, cfg.ChannelMap(), log.StandardLogger())
+	f, err := forwarder.NewForwarder(cfg.Webhook, log.StandardLogger())
 	if err != nil {
 		log.Errorf("Error while creating Forwarder: %s", err)
 		return
 	}
-	defer f.Close()
 
 	// Test that we can send to this correctly
-	err = f.Send("[log]", "Forwarder Connected", cfg.ErrorLogChannelID)
+	err = f.Send("[log]", "Forwarder Connected")
 	if err != nil {
 		log.Errorf("Error while sending to log: %s", err)
 		return
 	}
 
 	// Open up pidgin logs listener
-	pidgin, err := listener.NewPidginListener(f, cfg.ErrorLogChannelID, cfg.Logs, cfg.DeleteLogs)
+	pidgin, err := listener.NewPidginListener(f, cfg.Logs)
 	if err != nil {
 		log.Errorf("Error while sending to log: %s", err)
 		return
