@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
+
 	"os"
 	"os/signal"
 	"syscall"
@@ -17,6 +17,7 @@ import (
 
 func init() {
 	var debug = flag.Bool("v", true, "enables verbose logging")
+
 	// Setup logging options
 	if *debug {
 		log.SetLevel(log.DebugLevel)
@@ -51,34 +52,26 @@ func main() {
 	}
 
 	// Connect to the destination for all messages
-	f, err := forwarder.NewForwarder(cfg.ForwarderToken, cfg.IsWebhook, cfg.ChannelMap(), log.StandardLogger())
+	f, err := forwarder.NewForwarder(cfg.Webhooks, log.StandardLogger())
 	if err != nil {
 		log.Errorf("Error while creating Forwarder: %s", err)
 		return
 	}
-	defer f.Close()
 
 	// Test that we can send to this correctly
-	err = f.Send("[log]", "Forwarder Connected", cfg.ErrorLogChannelID)
+	err = f.Send("[log]", "Forwarder Connected")
 	if err != nil {
 		log.Errorf("Error while sending to log: %s", err)
 		return
 	}
 
-	// Open up all the listners and start processing messages.
-	l, err := listener.NewListeners(cfg.ListenerTokens(), f, &log.Logger{})
-	if err != nil {
-		log.Errorf("Error while creating listeners: %s", err)
-		return
-	}
-
-	defer l.Close()
-
-	err = f.Send("[log]", fmt.Sprintf("Listening on %d clients", len(l.Sessions)), cfg.ErrorLogChannelID)
+	// Open up pidgin logs listener
+	pidgin, err := listener.NewPidginListener(f, cfg.Logs)
 	if err != nil {
 		log.Errorf("Error while sending to log: %s", err)
 		return
 	}
+	pidgin.Run()
 
 	log.Infoln("Relay is now running.  Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)
