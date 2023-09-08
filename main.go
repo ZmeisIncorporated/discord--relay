@@ -52,7 +52,7 @@ func main() {
 	}
 
 	// Connect to the destination for all messages
-	f, err := forwarder.NewForwarder(cfg.Webhook, log.StandardLogger())
+	f, err := forwarder.NewForwarder(cfg.Webhooks, log.StandardLogger())
 	if err != nil {
 		log.Errorf("Error while creating Forwarder: %s", err)
 		return

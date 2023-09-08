@@ -8,7 +8,7 @@ import (
 
 // Config comment
 type Config struct {
-	Webhook              string     `yaml:"webhook"`
+	Webhooks             []string   `yaml:"webhooks"`
 	Logs                 string     `yaml:"logs"`
 }
 

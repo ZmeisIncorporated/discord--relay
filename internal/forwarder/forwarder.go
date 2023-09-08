@@ -17,14 +17,14 @@ var (
 
 // Forwarder Wrapper for the discord session
 type Forwarder struct {
-	webhook   string
+	Webhooks  []string
 	log       *logrus.Logger
 }
 
 // NewForwarder takes in a token and returns a Forward Session
-func NewForwarder(webhook string, log *logrus.Logger) (*Forwarder, error) {
+func NewForwarder(webhooks []string, log *logrus.Logger) (*Forwarder, error) {
 	fs := &Forwarder{
-		webhook: webhook,
+		Webhooks: webhooks,
 		log: log,
 	}
 	return fs, nil
@@ -78,17 +78,19 @@ func (f *Forwarder) Send(username, text string) error {
 	}
 	responseBody := bytes.NewBuffer(postBody)
 
+	for _, webhook := range f.Webhooks {
+
+		_, err = http.Post(
+			webhook,
+			"application/json",
+			responseBody,
+		)
 	
-	_, err = http.Post(
-		"https://discord.com/api/webhooks/1149623927560208405/Bh8S3PxfzAWDNxqmOH30V1dmDLAIS1bNj8n_2XGEao0pG2bdMXGTdmSGr0po8eaMOPGj",
-		"application/json",
-		responseBody,
-	)
-	
-	
-	if err != nil {
-		return fmt.Errorf("error forwarding to webhook %s", err)
+		if err != nil {
+			return fmt.Errorf("error forwarding to webhook %s", err)
+		}
 	}
+
 	return nil
 }
 

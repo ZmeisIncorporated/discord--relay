@@ -73,7 +73,7 @@ func filterByDate(now time.Time, evetime time.Time) bool {
 	diff := now.Sub(evetime)
 
 	// ToDo: looks dangerous
-	if diff > 1 * time.Hour {
+	if diff > 30 * time.Second {
 		return false
 	}
 	
