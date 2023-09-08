@@ -61,7 +61,7 @@ func (f *Forwarder) ToWebhook(username, text string, channelID string) error {
 	}
 	var wh *discordgo.Webhook
 	if len(ws) == 0 {
-		wh, err = f.WebhookCreate(channelID, "botman", "")
+		wh, err = f.WebhookCreate(channelID, "goon_bot", "")
 		if err != nil {
 			return fmt.Errorf("error creating webhook %s", err)
 		}
@@ -74,8 +74,8 @@ func (f *Forwarder) ToWebhook(username, text string, channelID string) error {
 
 	embed := &discordgo.MessageEmbed{
 		Author: &discordgo.MessageEmbedAuthor{
-			Name:    "",
-			IconURL: "",
+			Name:    username,
+			IconURL: "https://www.stealth-net.co.uk/EVE/goons_mumble/images/goon.png",
 		},
 		Title:       "",
 		Description: text,
@@ -90,7 +90,7 @@ func (f *Forwarder) ToWebhook(username, text string, channelID string) error {
 		true,
 		&discordgo.WebhookParams{
 			Content:         "",
-			Username:        "",
+			Username:        "GoonBot",
 			AvatarURL:       "",
 			TTS:             false,
 			Embeds:          []*discordgo.MessageEmbed{embed},

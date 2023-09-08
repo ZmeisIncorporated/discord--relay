@@ -1,16 +1,10 @@
 package listener
 
 import (
-	"bytes"
-	"errors"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"os"
-	"strings"
 	"time"
-
-	"golang.org/x/net/html"
+	"regexp"
 
 	"github.com/ZmeisIncorporated/discord--relay/internal/forwarder"
 )
@@ -19,96 +13,119 @@ type PidginListener struct {
 	f *forwarder.Forwarder
 	ch string
 	logs string
+	delete bool
 }
 
-func NewPidginListener(forwarder *forwarder.Forwarder, ch string, logs string) (PidginListener, error) {
+
+func NewPidginListener(forwarder *forwarder.Forwarder, ch string, logs string, delete bool) (PidginListener, error) {
 	l := PidginListener{
 		f: forwarder,
 		ch: ch,
 		logs: logs,
+		delete: delete,
 	}
 	return l, nil
 }
 
 
-func (l *PidginListener) Send(msg string) {
-	err := l.f.Send("[pidgin]", msg, l.ch)
+func (l *PidginListener) Send(username string, msg string) {
+	err := l.f.Send(username, msg, l.ch)
 	if err != nil {
 		fmt.Printf("Error while sending pidgin log file: %s", err)
 	}
 }
 
-func Body(doc *html.Node) (*html.Node, error) {
-	var body *html.Node
-	var crawler func(*html.Node)
 
-	crawler = func(node *html.Node) {
-		if node.Type == html.ElementNode && node.Data == "p" {
-			body = node
-			return
-		}
-		for child := node.FirstChild; child != nil; child = child.NextSibling {
-			crawler(child)
-		}
-	}
-	crawler(doc)
-
-	if body != nil {
-		return body, nil
-	}
-	return nil, errors.New("Missing <p> in the node tree")
+type Message struct {
+	message string
+	username string
+	evetime time.Time
 }
 
 
-func renderNode(n *html.Node) string {
-	var buf bytes.Buffer
-	w := io.Writer(&buf)
-	html.Render(w, n)
-	message := buf.String()
-	message = strings.Replace(message, "<br/>", "\n", -1)
-	message = strings.Replace(message, "~~~", "", -1)
-	return message
+func parseMessage(text string) *Message {
+	re := regexp.MustCompile(`(?s:\((?P<time>[\d:]+)\) directorbot: (?P<message>.*?)~~~ .*? from (?P<username>.*?) to .*? at (?P<evetime>.*?) EVE ~~~)`)
+	parts := re.FindStringSubmatch(text)
+
+	layout := "2006-01-02 15:04:05"
+	e := parts[4]
+	
+	evetime, err := time.Parse(layout, e)
+	if err != nil {
+		fmt.Println("Error while parsing date", err)
+	}
+	
+	return &Message{
+		message: parts[2],
+		username: parts[3],
+		evetime: evetime,
+	}
 }
 
-func (l *PidginListener) MsgParser(text string) string {
-	raw_message, err := html.Parse(strings.NewReader(text))
+func getMessages(text []byte) []*Message {
+	var messages []*Message
+	re := regexp.MustCompile(`(?s:\([\d:]+\) directorbot:.*?~~~ .*? ~~~)`)
+	m := re.FindAll(text, -1)
+	for _, message := range m {
+		messages = append(messages, parseMessage(string(message)))
+	}
+	return messages
+}
+
+
+func filterByDate(now time.Time, evetime time.Time) bool {
+	diff := now.Sub(evetime)
+
+	// ToDo: looks dangerous
+	if diff > 30 * time.Second {
+		return false
+	}
+	
+	return true
+}
+
+
+func getMessagesFromFiles(path string) []*Message {
+	files, err := os.ReadDir(path)
 	if err != nil {
-		l.Send("Error while parsing pidgin message")
+		fmt.Println("Error while getting files")
 	}
 
-	bn, err := Body(raw_message)
-	if err != nil {
-		l.Send("Error while parsing pidgin message")
+	var messages []*Message
+	now := time.Now()
+
+	for _, filename := range files {
+		if filename.IsDir() {
+			continue
+		}
+
+		filepath := fmt.Sprintf("%s/%s", path, filename.Name())
+		rawdata, err := os.ReadFile(filepath)
+		if err != nil {
+			fmt.Println("Error while reading file")
+		}
+
+		for _, m := range getMessages(rawdata) {
+			if filterByDate(now, m.evetime) {
+				messages = append(messages, m)
+			}
+		}
 	}
 
-	body := renderNode(bn)
-	return body
+	return messages
 }
 
 
 func (l *PidginListener) Run() {
-	files, err := ioutil.ReadDir(l.logs)
-	if err != nil {
-		l.Send("Error while reading pidgin log files")
-		return
-	}
-
 	for {
 		select {
 		case <- time.After(5 * time.Second):
-			
-			for _, file := range files {
-				f, err := os.ReadFile(fmt.Sprintf("%s/%s", l.logs, file.Name()))
-				if err != nil {
-					l.Send(fmt.Sprintf("Error while reading logfile %s: %s", file.Name(), err))
-				}
-				fs := string(f)
-				body := l.MsgParser(fs)
-				l.Send(body)
+	
+			messages := getMessagesFromFiles(l.logs)
 
-				// ToDo: remove obsolete log file after sending it to discord
+			for _, m := range messages {
+				l.Send(m.username, m.message)
 			}
-
 		}
 	}
 

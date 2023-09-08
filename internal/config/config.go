@@ -14,6 +14,7 @@ type Config struct {
 	Listeners            []Listener `yaml:"discord_listeners"`
 	ConfigPath           string     `yaml:"-"`
 	Logs                 string     `yaml:"logs"`
+	DeleteLogs           bool       `yaml:"delete_logs"`
 }
 
 // NewConfig Loads the config from the provided path

@@ -67,7 +67,7 @@ func main() {
 	}
 
 	// Open up pidgin logs listener
-	pidgin, err := listener.NewPidginListener(f, cfg.ErrorLogChannelID, cfg.Logs)
+	pidgin, err := listener.NewPidginListener(f, cfg.ErrorLogChannelID, cfg.Logs, cfg.DeleteLogs)
 	if err != nil {
 		log.Errorf("Error while sending to log: %s", err)
 		return
