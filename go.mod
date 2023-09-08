@@ -5,6 +5,7 @@ go 1.19
 require (
 	github.com/bwmarrin/discordgo v0.27.1
 	github.com/sirupsen/logrus v1.8.1
+	golang.org/x/net v0.10.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 

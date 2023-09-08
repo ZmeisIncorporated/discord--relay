@@ -23,7 +23,7 @@ type Forwarder struct {
 
 // NewForwarder takes in a token and returns a Forward Session
 func NewForwarder(token string, webhook bool, chans map[string]string, log *logrus.Logger) (*Forwarder, error) {
-	d, err := discordgo.New(fmt.Sprintf("Bot %s", token))
+	d, err := discordgo.New(token)
 	if err != nil {
 		return nil, err
 	}
