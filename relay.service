@@ -1,0 +1,11 @@
+[Unit]
+Description=Pidgin Relay Daemon
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/pidgin-relay -c /usr/local/etc/config.yaml
+ExecStop=/bin/kill -15 $MAINPID
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
