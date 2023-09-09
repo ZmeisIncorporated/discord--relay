@@ -58,6 +58,7 @@ func getMessages(text []byte) ([]*Message, error) {
 	var messages []*Message
 	re := regexp.MustCompile(`(?s:\([\d:]+\) directorbot:.*?~~~ .*? ~~~)`)
 	m := re.FindAll(text, -1)
+
 	for _, message := range m {
 		new_message, err := parseMessage(string(message))
 		if err != nil {
@@ -87,7 +88,6 @@ func getMessagesFromFiles(path string) ([]*Message, error) {
 		return nil, fmt.Errorf("Error while getting files: %w", err)
 	}
 
-	var messages []*Message
 	now := time.Now()
 
 	for _, filename := range files {

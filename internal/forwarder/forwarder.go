@@ -10,7 +10,6 @@ import (
 )
 
 
-// Forwarder Wrapper for the discord session
 type Forwarder struct {
 	AdmHooks   []string
 	WebHooks   []string

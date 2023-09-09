@@ -19,16 +19,14 @@ import (
 func main() {
 	var configPath = flag.String("c", "config.yaml", "specicies the path to the config")
 
-	// Parse up the command line flags
 	flag.Parse()
 
-	// Make sure the config exists
 	if _, err := os.Stat(*configPath); os.IsNotExist(err) {
 		log.Printf("config doesnt exist: %s", err)
 		return
 	}
+	log.Printf("use config: %s", *configPath)
 
-	//Load Config
 	cfg, err := config.NewConfig(*configPath)
 	if err != nil {
 		log.Printf("Error getting config: %s", err)
