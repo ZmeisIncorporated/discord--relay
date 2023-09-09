@@ -1,8 +1,11 @@
-default: run
-
-run:
-	docker run -ti --rm -v `pwd`/config.yaml:/discord--relay/config.yaml discord--relay:latest
-
+default: build
 
 build:
-	docker build --tag discord--relay:latest .
+		go build -a -v -o pidgin-relay main.go
+
+install:
+		rm -f /usr/local/bin/pidgin-relay
+		cp -v pidgin-relay /usr/local/bin/
+
+run:
+		./pidgin-relay -c config.yaml

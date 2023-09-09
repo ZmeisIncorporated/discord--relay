@@ -2,30 +2,21 @@ package forwarder
 
 import (
 	"fmt"
-	"regexp"
 	"time"
 	"encoding/json"
 	"bytes"
 	"net/http"
-
-	"github.com/sirupsen/logrus"
+	"log"
 )
 
-var (
-	noAtsReg = regexp.MustCompile(`@(\S+)`)
-)
 
-// Forwarder Wrapper for the discord session
 type Forwarder struct {
 	Webhooks  []string
-	log       *logrus.Logger
 }
 
-// NewForwarder takes in a token and returns a Forward Session
-func NewForwarder(webhooks []string, log *logrus.Logger) (*Forwarder, error) {
+func NewForwarder(webhooks []string) (*Forwarder, error) {
 	fs := &Forwarder{
 		Webhooks: webhooks,
-		log: log,
 	}
 	return fs, nil
 }
@@ -51,8 +42,9 @@ type WebhookMessage struct {
 }
 
 
-// Send forwards a message to the specific chan as a webhook
 func (f *Forwarder) Send(username, text string) error {
+	log.Printf("Sending new message from %s", username)
+	
 	// Get current time in UTC time zone
 	currentTime := time.Now().UTC().Format("2006/01/02 15:04:05") + " ET"
 
@@ -76,19 +68,24 @@ func (f *Forwarder) Send(username, text string) error {
 	if err != nil {
 		fmt.Println(err)
 	}
-	responseBody := bytes.NewBuffer(postBody)
 
 	for _, webhook := range f.Webhooks {
 
-		_, err = http.Post(
+		requestBody := bytes.NewBuffer(postBody)
+
+		resp, err := http.Post(
 			webhook,
 			"application/json",
-			responseBody,
+			requestBody,
 		)
+		defer resp.Body.Close()
 	
 		if err != nil {
-			return fmt.Errorf("error forwarding to webhook %s", err)
+			log.Printf("Error forwarding to webhook %s: %s", webhook, err)
+			continue
 		}
+
+		log.Printf("Message forwarded to %s", webhook)
 	}
 
 	return nil
