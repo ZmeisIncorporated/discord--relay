@@ -88,6 +88,7 @@ func getMessagesFromFiles(path string) ([]*Message, error) {
 		return nil, fmt.Errorf("Error while getting files: %w", err)
 	}
 
+	var messages []*Message
 	now := time.Now()
 
 	for _, filename := range files {
