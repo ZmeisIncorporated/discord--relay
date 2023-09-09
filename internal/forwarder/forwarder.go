@@ -2,21 +2,28 @@ package forwarder
 
 import (
 	"fmt"
+	"log"
 	"time"
 	"encoding/json"
 	"bytes"
 	"net/http"
-	"log"
 )
 
 
 type Forwarder struct {
-	Webhooks  []string
+	AdmHooks   []string
+	WebHooks   []string
+	WebIn      chan *WebhookMessage
+	AdmIn      chan *WebhookMessage
 }
 
-func NewForwarder(webhooks []string) (*Forwarder, error) {
+// NewForwarder takes in a token and returns a Forward Session
+func NewForwarder(webhooks, admhooks []string) (*Forwarder, error) {
 	fs := &Forwarder{
-		Webhooks: webhooks,
+		AdmHooks: admhooks, 
+		WebHooks: webhooks,
+		WebIn:    make(chan *WebhookMessage),
+		AdmIn:    make(chan *WebhookMessage),
 	}
 	return fs, nil
 }
@@ -42,47 +49,23 @@ type WebhookMessage struct {
 }
 
 
-func (f *Forwarder) Send(username, text string) error {
-	log.Printf("Sending new message from %s", username)
-	
-	// Get current time in UTC time zone
-	currentTime := time.Now().UTC().Format("2006/01/02 15:04:05") + " ET"
-
-	e := Embed{
-	        Author: EmbedAuthor{
-			Name: username,
-			IconUrl: "https://www.stealth-net.co.uk/EVE/goons_mumble/images/goon.png",
-		},
-		Description: text,
-		Footer: EmbedFooter{
-			Text: currentTime,
-		},
-	}
-	
-	wm := WebhookMessage{
-		Username: "GoonBot",
-		Embeds: []Embed{e, },
-	}
-
+func (f *Forwarder) Send2Hooks(wm *WebhookMessage, webhooks []string) error {
 	postBody, err := json.Marshal(wm)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	for _, webhook := range f.Webhooks {
-
+	for _, webhook := range webhooks {
 		requestBody := bytes.NewBuffer(postBody)
-
 		resp, err := http.Post(
 			webhook,
 			"application/json",
 			requestBody,
 		)
 		defer resp.Body.Close()
-	
+
 		if err != nil {
-			log.Printf("Error forwarding to webhook %s: %s", webhook, err)
-			continue
+			return fmt.Errorf("error forwarding to webhook %s", err)
 		}
 
 		log.Printf("Message forwarded to %s", webhook)
@@ -91,3 +74,56 @@ func (f *Forwarder) Send(username, text string) error {
 	return nil
 }
 
+
+func CreateWebhookMessage(username, message string) *WebhookMessage {
+	// Get current time in UTC time zone
+	currentTime := time.Now().UTC().Format("2006/01/02 15:04:05") + " ET"
+
+	e := Embed{
+	        Author: EmbedAuthor{
+			Name: username,
+			IconUrl: "https://www.stealth-net.co.uk/EVE/goons_mumble/images/goon.png",
+		},
+		Description: message,
+		Footer: EmbedFooter{
+			Text: currentTime,
+		},
+	}
+	
+	return &WebhookMessage{
+		Username: "GoonBot",
+		Embeds: []Embed{e, },
+	}
+}
+
+
+func (f *Forwarder) WebSend(username, message string) {
+	wm := CreateWebhookMessage(username, message)
+	f.WebIn <- wm
+}
+
+func (f *Forwarder) AdmSend(username, message string) {
+	wm := CreateWebhookMessage(username, message)
+	f.AdmIn <- wm
+}
+
+
+func (f *Forwarder) Start() {
+	go func() {
+		for {
+			select {
+			case w := <- f.WebIn:
+				err := f.Send2Hooks(w, f.WebHooks)
+				if err != nil {
+					log.Printf("%s", err)
+				}
+			case a := <- f.AdmIn:
+				err := f.Send2Hooks(a, f.AdmHooks)
+				if err != nil {
+					log.Printf("%s", err)
+				}
+			}
+		}
+	}()
+
+}

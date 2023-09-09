@@ -8,6 +8,7 @@ import (
 
 // Config comment
 type Config struct {
+	Admhooks             []string   `yaml:"admhooks"`
 	Webhooks             []string   `yaml:"webhooks"`
 	Logs                 string     `yaml:"logs"`
 }
@@ -23,4 +24,3 @@ func NewConfig(path string) (*Config, error) {
 	err = yaml.Unmarshal(file, config)
 	return config, err
 }
-

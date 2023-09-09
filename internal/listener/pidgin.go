@@ -10,26 +10,21 @@ import (
 	"github.com/ZmeisIncorporated/discord--relay/internal/forwarder"
 )
 
+const pidgin = "pidgin"
+
+
 type PidginListener struct {
 	f *forwarder.Forwarder
 	logs string
 }
 
 
-func NewPidginListener(forwarder *forwarder.Forwarder, logs string) (PidginListener, error) {
+func NewPidginListener(forwarder *forwarder.Forwarder, logs string) PidginListener {
 	l := PidginListener{
 		f: forwarder,
 		logs: logs,
 	}
-	return l, nil
-}
-
-
-func (l *PidginListener) Send(username string, msg string) {
-	err := l.f.Send(username, msg)
-	if err != nil {
-		log.Printf("Error while sending pidgin message from %s: %s", username, err)
-	}
+	return l
 }
 
 
@@ -49,7 +44,7 @@ func parseMessage(text string) (*Message, error) {
 	
 	evetime, err := time.Parse(layout, e)
 	if err != nil {
-		return nil, fmt.Errorf("Error while parsing date %s: %w", e, err)
+		return nil, fmt.Errorf("Error while parsing date: %w", err)
 	}
 	
 	return &Message{
@@ -59,7 +54,7 @@ func parseMessage(text string) (*Message, error) {
 	}, nil
 }
 
-func getMessages(text []byte) []*Message {
+func getMessages(text []byte) ([]*Message, error) {
 	var messages []*Message
 	re := regexp.MustCompile(`(?s:\([\d:]+\) directorbot:.*?~~~ .*? ~~~)`)
 	m := re.FindAll(text, -1)
@@ -67,12 +62,11 @@ func getMessages(text []byte) []*Message {
 	for _, message := range m {
 		new_message, err := parseMessage(string(message))
 		if err != nil {
-			log.Println(err)
-			continue
+			return nil, err
 		}
 		messages = append(messages, new_message)
 	}
-	return messages
+	return messages, nil
 }
 
 
@@ -89,13 +83,12 @@ func filterByDate(now time.Time, evetime time.Time) bool {
 
 
 func getMessagesFromFiles(path string) ([]*Message, error) {
-	var messages []*Message
-
 	files, err := os.ReadDir(path)
 	if err != nil {
-		return nil, fmt.Errorf("Error while getting pidgin files from %s: %w", path, err)
+		return nil, fmt.Errorf("Error while getting files: %w", err)
 	}
 
+	var messages []*Message
 	now := time.Now()
 
 	for _, filename := range files {
@@ -106,42 +99,48 @@ func getMessagesFromFiles(path string) ([]*Message, error) {
 		filepath := fmt.Sprintf("%s/%s", path, filename.Name())
 		rawdata, err := os.ReadFile(filepath)
 		if err != nil {
-			log.Printf("Error while reading file %s: %s", filepath, err)
-			continue
+			return nil, fmt.Errorf("Error while reading file: %w", err)
 		}
 
-		for _, m := range getMessages(rawdata) {
+		new_messages, err := getMessages(rawdata)
+		if err != nil {
+			return nil, fmt.Errorf("Error while parsing file: %w", err)
+		}
+		
+		for _, m := range new_messages {
 			if filterByDate(now, m.evetime) {
 				messages = append(messages, m)
 			}
 		}
 	}
 
-	if len(messages) > 0 {
-		log.Printf("Got %d new messages from pidgin", len(messages))
-	}
-
 	return messages, nil
 }
 
 
-func (l *PidginListener) Run() {
-	log.Printf("Pidgin listener started")
-	for {
-		select {
-		case <- time.After(30 * time.Second):
+func (l *PidginListener) Start() {
+	log.Println("Starting finch listener")
+	go func() {
+		for {
+			select {
+			case <- time.After(30 * time.Second):
+	
+				messages, err := getMessagesFromFiles(l.logs)
+				if err != nil {
+					msg := fmt.Sprintf("PidginListener error: %s", err)
+					log.Println(msg)
+					l.f.AdmSend(pidgin, msg)
+				}
 
-			messages, err := getMessagesFromFiles(l.logs)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
+				if len(messages) > 0 {
+					log.Printf("Got %d new messages from finch", len(messages))
+				}
 
-			for _, m := range messages {
-				l.Send(m.username, m.message)
+				for _, m := range messages {
+					l.f.WebSend(m.username, m.message)
+				}
 			}
 		}
-	}
-
+	}()
 }
 
