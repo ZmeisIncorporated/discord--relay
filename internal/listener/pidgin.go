@@ -117,7 +117,10 @@ func getMessagesFromFiles(path string) ([]*Message, error) {
 		}
 	}
 
-	log.Printf("Got %d new messages from pidgin", len(messages))
+	if len(messages) > 0 {
+		log.Printf("Got %d new messages from pidgin", len(messages))
+	}
+
 	return messages, nil
 }
 
