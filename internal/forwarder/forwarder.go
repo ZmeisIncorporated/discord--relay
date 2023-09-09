@@ -55,19 +55,22 @@ func (f *Forwarder) Send2Hooks(wm *WebhookMessage, webhooks []string) error {
 	if err != nil {
 		fmt.Println(err)
 	}
-	responseBody := bytes.NewBuffer(postBody)
+	requestBody := bytes.NewBuffer(postBody)
 
 	for _, webhook := range webhooks {
 
-		_, err = http.Post(
+		resp, err := http.Post(
 			webhook,
 			"application/json",
-			responseBody,
+			requestBody,
 		)
-	
+		defer resp.Body.Close()
+
 		if err != nil {
 			return fmt.Errorf("error forwarding to webhook %s", err)
 		}
+
+		log.Printf("Message forwarded to %s", webhook)
 	}
 
 	return nil

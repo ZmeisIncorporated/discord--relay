@@ -131,6 +131,10 @@ func (l *PidginListener) Start() {
 					l.f.AdmSend(pidgin, msg)
 				}
 
+				if len(messages) > 0 {
+					log.Printf("Got %d new messages from finch", len(messages))
+				}
+
 				for _, m := range messages {
 					l.f.WebSend(m.username, m.message)
 				}
