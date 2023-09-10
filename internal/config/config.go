@@ -8,9 +8,11 @@ import (
 
 // Config comment
 type Config struct {
-	Admhooks             []string   `yaml:"admhooks"`
-	Webhooks             []string   `yaml:"webhooks"`
-	Logs                 string     `yaml:"logs"`
+	Admhooks []string `yaml:"admhooks"`
+	Webhooks []string `yaml:"webhooks"`
+	Logs     string   `yaml:"logs"`
+	IconUrl  string   `yaml:"icon_url"`
+	BotName  string   `yaml:"botname"`
 }
 
 // NewConfig Loads the config from the provided path

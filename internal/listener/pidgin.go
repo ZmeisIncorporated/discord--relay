@@ -2,38 +2,38 @@ package listener
 
 import (
 	"fmt"
-	"os"
-	"time"
-	"regexp"
 	"log"
+	"os"
+	"regexp"
+	"time"
 
 	"github.com/ZmeisIncorporated/discord--relay/internal/forwarder"
 )
 
-const pidgin = "pidgin"
-
+const (
+	pidgin        = "pidgin"
+	checkTimeout  = 30 * time.Second
+	filterTimeout = checkTimeout + 90*time.Second
+)
 
 type PidginListener struct {
-	f *forwarder.Forwarder
+	f    *forwarder.Forwarder
 	logs string
 }
 
-
 func NewPidginListener(forwarder *forwarder.Forwarder, logs string) PidginListener {
 	l := PidginListener{
-		f: forwarder,
+		f:    forwarder,
 		logs: logs,
 	}
 	return l
 }
 
-
 type Message struct {
-	message string
+	message  string
 	username string
-	evetime time.Time
+	evetime  time.Time
 }
-
 
 func parseMessage(text string) (*Message, error) {
 	re := regexp.MustCompile(`(?s:\((?P<time>[\d:]+)\) directorbot: (?P<message>.*?)~~~ .*? from (?P<username>.*?) to .*? at (?P<evetime>.*?) EVE ~~~)`)
@@ -41,16 +41,16 @@ func parseMessage(text string) (*Message, error) {
 
 	layout := "2006-01-02 15:04:05"
 	e := parts[4]
-	
+
 	evetime, err := time.Parse(layout, e)
 	if err != nil {
 		return nil, fmt.Errorf("Error while parsing date: %w", err)
 	}
-	
+
 	return &Message{
-		message: parts[2],
+		message:  parts[2],
 		username: parts[3],
-		evetime: evetime,
+		evetime:  evetime,
 	}, nil
 }
 
@@ -69,18 +69,15 @@ func getMessages(text []byte) ([]*Message, error) {
 	return messages, nil
 }
 
-
 func filterByDate(now time.Time, evetime time.Time) bool {
 	diff := now.Sub(evetime)
 
-	// ToDo: looks dangerous
-	if diff > 40 * time.Second {
+	if diff > filterTimeout {
 		return false
 	}
-	
+
 	return true
 }
-
 
 func getMessagesFromFiles(path string) ([]*Message, error) {
 	files, err := os.ReadDir(path)
@@ -106,7 +103,7 @@ func getMessagesFromFiles(path string) ([]*Message, error) {
 		if err != nil {
 			return nil, fmt.Errorf("Error while parsing file: %w", err)
 		}
-		
+
 		for _, m := range new_messages {
 			if filterByDate(now, m.evetime) {
 				messages = append(messages, m)
@@ -117,14 +114,14 @@ func getMessagesFromFiles(path string) ([]*Message, error) {
 	return messages, nil
 }
 
-
 func (l *PidginListener) Start() {
-	log.Println("Starting finch listener")
+	log.Println("Starting pidgin listener")
 	go func() {
+		var lastUsername, lastMessage string = "", ""
 		for {
 			select {
-			case <- time.After(30 * time.Second):
-	
+			case <-time.After(checkTimeout):
+
 				messages, err := getMessagesFromFiles(l.logs)
 				if err != nil {
 					msg := fmt.Sprintf("PidginListener error: %s", err)
@@ -133,14 +130,18 @@ func (l *PidginListener) Start() {
 				}
 
 				if len(messages) > 0 {
-					log.Printf("Got %d new messages from finch", len(messages))
+					log.Printf("Got %d last messages from pidgin", len(messages))
 				}
 
 				for _, m := range messages {
+					if lastUsername == m.username && lastMessage == m.message {
+						log.Printf("Message from %s was send already, skip", m.username)
+						continue
+					}
 					l.f.WebSend(m.username, m.message)
+					lastUsername, lastMessage = m.username, m.message
 				}
 			}
 		}
 	}()
 }
-

@@ -1,20 +1,18 @@
 package monitor
 
 import (
-	"time"
 	"log"
+	"time"
 
-	gops "github.com/mitchellh/go-ps"
 	"github.com/ZmeisIncorporated/discord--relay/internal/forwarder"
+	gops "github.com/mitchellh/go-ps"
 )
 
 const finch = "finch"
 
-
 type Monitor struct {
 	f *forwarder.Forwarder
 }
-
 
 func searchFinch() bool {
 	processes, err := gops.Processes()
@@ -32,12 +30,11 @@ func searchFinch() bool {
 	return false
 }
 
-
 func (m *Monitor) Start() {
 	go func() {
 		for {
 			select {
-			case <- time.After(5 * time.Second):
+			case <-time.After(5 * time.Second):
 				if f := searchFinch(); !f {
 					msg := "Finch process not found, need to restart it manually"
 					m.f.AdmSend("[monitor]", msg)
@@ -47,7 +44,6 @@ func (m *Monitor) Start() {
 		}
 	}()
 }
-
 
 func NewMonitor(f *forwarder.Forwarder) *Monitor {
 	return &Monitor{

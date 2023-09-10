@@ -1,9 +1,9 @@
 package main
 
 import (
-	"log"
 	"flag"
 	"fmt"
+	"log"
 
 	"os"
 	"os/signal"
@@ -15,9 +15,9 @@ import (
 	"github.com/ZmeisIncorporated/discord--relay/internal/monitor"
 )
 
-
 func main() {
 	var configPath = flag.String("c", "config.yaml", "specicies the path to the config")
+	var monitorDisable = flag.Bool("n", false, "disable finch monitoring")
 
 	flag.Parse()
 
@@ -34,7 +34,7 @@ func main() {
 	}
 
 	// Connect to the destination for all messages
-	f, err := forwarder.NewForwarder(cfg.Webhooks, cfg.Admhooks)
+	f, err := forwarder.NewForwarder(cfg.Webhooks, cfg.Admhooks, cfg.IconUrl, cfg.BotName)
 	if err != nil {
 		log.Printf("Error while creating Forwarder: %s", err)
 		return
@@ -43,11 +43,13 @@ func main() {
 	log.Println("Forwarder Connected")
 	f.AdmSend("[main]", "Forwarder Connected")
 
-	// Start finch monitoring
-	m := monitor.NewMonitor(f)
-	m.Start()
-	log.Println("Monitor Started")
-	f.AdmSend("[main]", "Monitor Started")
+	// Start finch monitoring if enabled
+	if !*monitorDisable {
+		m := monitor.NewMonitor(f)
+		m.Start()
+		log.Println("Monitor Started")
+		f.AdmSend("[main]", "Monitor Started")
+	}
 
 	// Open up pidgin logs listener
 	pidgin := listener.NewPidginListener(f, cfg.Logs)
