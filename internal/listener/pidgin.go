@@ -135,7 +135,7 @@ func (l *PidginListener) Start() {
 
 				for _, m := range messages {
 					if lastUsername == m.username && lastMessage == m.message {
-						log.Printf("Message from %s was send already, skip", m.username)
+						log.Printf("Message from %s has already been sent, skip", m.username)
 						continue
 					}
 					l.f.WebSend(m.username, m.message)

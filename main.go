@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-
 	"os"
 	"os/signal"
 	"syscall"
