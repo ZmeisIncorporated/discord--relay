@@ -138,7 +138,7 @@ func (l *PidginListener) Start() {
 						log.Printf("Message from %s has already been sent, skip", m.username)
 						continue
 					}
-					l.f.WebSend(m.username, m.message)
+					l.f.RouteMessage(m.username, m.message)
 					lastUsername, lastMessage = m.username, m.message
 				}
 			}

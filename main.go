@@ -36,7 +36,7 @@ func main() {
 	}
 
 	// Connect to the destination for all messages
-	f, err := forwarder.NewForwarder(cfg.Webhooks, cfg.Admhooks, cfg.IconUrl, cfg.BotName)
+	f, err := forwarder.NewForwarder(cfg.Webhooks, cfg.Admhooks, cfg.Filters, cfg.IconUrl, cfg.BotName)
 	if err != nil {
 		log.Printf("Error while creating Forwarder: %s", err)
 		return

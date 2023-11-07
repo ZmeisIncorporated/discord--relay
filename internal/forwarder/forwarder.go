@@ -6,25 +6,34 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
+
+	"github.com/ZmeisIncorporated/discord--relay/internal/config"
 )
+
+// Message contains discord message and list of hooks to send to
+type Message struct {
+	Message  *WebhookMessage
+	Webhooks []string
+}
 
 type Forwarder struct {
 	AdmHooks []string
 	WebHooks []string
-	WebIn    chan *WebhookMessage
-	AdmIn    chan *WebhookMessage
+	Filters  map[string]config.Filter
+	Sender   chan *Message
 	IconUrl  string
 	Botname  string
 }
 
 // NewForwarder takes in a token and returns a Forward Session
-func NewForwarder(webhooks, admhooks []string, iconUrl, botname string) (*Forwarder, error) {
+func NewForwarder(webhooks, admhooks []string, filters map[string]config.Filter, iconUrl, botname string) (*Forwarder, error) {
 	fs := &Forwarder{
 		AdmHooks: admhooks,
 		WebHooks: webhooks,
-		WebIn:    make(chan *WebhookMessage),
-		AdmIn:    make(chan *WebhookMessage),
+		Filters:  filters,
+		Sender:   make(chan *Message),
 		IconUrl:  iconUrl,
 		Botname:  botname,
 	}
@@ -51,6 +60,7 @@ type WebhookMessage struct {
 	Embeds   []Embed `json:"embeds"`
 }
 
+// Send2Hooks sends message to discord hooks
 func (f *Forwarder) Send2Hooks(wm *WebhookMessage, webhooks []string) error {
 	postBody, err := json.Marshal(wm)
 	if err != nil {
@@ -97,27 +107,59 @@ func CreateWebhookMessage(username, message, iconUrl, botname string) *WebhookMe
 	}
 }
 
-func (f *Forwarder) WebSend(username, message string) {
+// RouteMessage send message to destination depends on filters settings
+func (f *Forwarder) RouteMessage(username, message string) {
 	wm := CreateWebhookMessage(username, message, f.IconUrl, f.Botname)
-	f.WebIn <- wm
+
+	for filterName, filter := range f.Filters {
+		for _, pattern := range filter.Patterns {
+
+			if strings.Contains(message, pattern) {
+				log.Printf("Filter %s worked", filterName)
+				f.Sender <- &Message{
+					wm,
+					filter.Webhooks,
+				}
+				if !filter.Propagate {
+					log.Printf("Filter %s propagate is off, message will not moved to main webhooks", filterName)
+					return
+				}
+				log.Printf("Filter %s propagate is on, message will moved to main webhooks", filterName)
+			}
+		}
+	}
+
+	log.Printf("Process message to default webhooks")
+	f.Sender <- &Message{
+		wm,
+		f.WebHooks,
+	}
 }
 
+// WebSend sends messages to main webhooks without filtering
+func (f *Forwarder) WebSend(username, message string) {
+	wm := CreateWebhookMessage(username, message, f.IconUrl, f.Botname)
+	f.Sender <- &Message{
+		wm,
+		f.WebHooks,
+	}
+}
+
+// AdmSend sends messages to admin webhooks without filtering
 func (f *Forwarder) AdmSend(username, message string) {
 	wm := CreateWebhookMessage(username, message, f.IconUrl, f.Botname)
-	f.AdmIn <- wm
+	f.Sender <- &Message{
+		wm,
+		f.AdmHooks,
+	}
 }
 
 func (f *Forwarder) Start() {
 	go func() {
 		for {
 			select {
-			case w := <-f.WebIn:
-				err := f.Send2Hooks(w, f.WebHooks)
-				if err != nil {
-					log.Printf("%s", err)
-				}
-			case a := <-f.AdmIn:
-				err := f.Send2Hooks(a, f.AdmHooks)
+			case s := <-f.Sender:
+				err := f.Send2Hooks(s.Message, s.Webhooks)
 				if err != nil {
 					log.Printf("%s", err)
 				}

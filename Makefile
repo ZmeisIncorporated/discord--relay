@@ -9,3 +9,6 @@ install:
 
 run:
 		./pidgin-relay -c config.yaml
+
+test:
+		go run main.go -c config.yaml
