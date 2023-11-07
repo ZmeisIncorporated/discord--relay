@@ -14,7 +14,7 @@ import (
 	"github.com/ZmeisIncorporated/discord--relay/internal/monitor"
 )
 
-const version = "1.0.0"
+const version = "1.1.0"
 
 func main() {
 	var configPath = flag.String("c", "config.yaml", "specicies the path to the config")
